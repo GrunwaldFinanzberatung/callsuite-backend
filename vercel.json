@@ -1,11 +1,5 @@
 {
   "version": 2,
-  "crons": [
-    {
-      "path": "/api/sheets-sync",
-      "schedule": "0 */2 * * *"
-    }
-  ],
   "functions": {
     "api/*.js": {
       "maxDuration": 30
