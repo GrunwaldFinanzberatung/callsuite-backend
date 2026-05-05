@@ -5,7 +5,7 @@ const twilio = require('twilio');
 
 const ACCOUNT_SID  = process.env.TWILIO_ACCOUNT_SID;
 const AUTH_TOKEN   = process.env.TWILIO_AUTH_TOKEN;
-const TWIML_APP_SID = process.env.TWILIO_TWIML_APP_SID; // wird nach Setup eingetragen
+const TWIML_APP_SID = process.env.TWILIO_TWIML_APP_SID || 'AP069e13e5a94fb4998e2860a1d1ba7420';
 const FROM_NUMBER  = process.env.TWILIO_FROM_NUMBER;
 
 module.exports = async (req, res) => {
