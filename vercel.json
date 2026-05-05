@@ -13,8 +13,7 @@
   },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/formular/(.*)", "dest": "/public/formular.html" },
-    { "src": "/formular", "dest": "/public/formular.html" },
-    { "src": "/(.*)", "dest": "/public/$1" }
+    { "src": "/formular", "dest": "/formular.html" },
+    { "src": "/formular/(.*)", "dest": "/formular.html" }
   ]
 }
