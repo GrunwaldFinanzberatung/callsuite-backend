@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontakt weiterleiten – Grunwald Finanz</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Outfit', sans-serif; background: #F2F4F8; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.card { background: #fff; border-radius: 16px; padding: 32px; width: 100%; max-width: 520px; box-shadow: 0 8px 40px rgba(12,21,36,.12); }
+.logo { font-size: 20px; font-weight: 900; color: #1847D4; margin-bottom: 4px; }
+.sub { font-size: 13px; color: #8A9BB8; margin-bottom: 28px; }
+.fl { display: flex; flex-direction: column; gap: 14px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: #8A9BB8; margin-bottom: 4px; display: block; }
+input, select, textarea {
+  width: 100%; padding: 11px 14px; border: 1.5px solid #C8D0DF;
+  border-radius: 8px; font-family: 'Outfit', sans-serif; font-size: 13px;
+  color: #0C1524; background: #F2F4F8; transition: border-color .15s;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: #1847D4; background: #fff; }
+textarea { resize: vertical; min-height: 80px; }
+.req { color: #C41F1F; }
+.btn {
+  width: 100%; padding: 14px; border-radius: 8px; border: none;
+  background: #1847D4; color: #fff; font-family: 'Outfit', sans-serif;
+  font-size: 15px; font-weight: 800; cursor: pointer; transition: all .15s;
+  margin-top: 6px;
+}
+.btn:hover { background: #1238B0; transform: translateY(-1px); }
+.btn:disabled { background: #C8D0DF; cursor: not-allowed; transform: none; }
+.success { display: none; text-align: center; padding: 32px 0; }
+.success .icon { font-size: 56px; margin-bottom: 12px; }
+.success h2 { font-size: 22px; font-weight: 800; color: #0A8A5F; margin-bottom: 8px; }
+.success p { font-size: 14px; color: #8A9BB8; }
+.err { background: #FFF0F0; border: 1px solid #FFBBBB; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #C41F1F; display: none; margin-top: 8px; }
+.partner-info { background: #EBF0FF; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #1847D4; margin-bottom: 16px; display: none; }
+.pflicht { font-size: 11px; color: #8A9BB8; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">● Grunwald Finanz</div>
+  <div class="sub">Kontakt weiterleiten</div>
+  <div class="partner-info" id="partnerInfo"></div>
+
+  <div id="formWrap">
+    <div class="fl">
+      <div class="row">
+        <div>
+          <label>Vorname <span class="req">*</span></label>
+          <input type="text" id="vorname" placeholder="Max">
+        </div>
+        <div>
+          <label>Nachname <span class="req">*</span></label>
+          <input type="text" id="nachname" placeholder="Mustermann">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Telefon <span class="req">*</span></label>
+          <input type="tel" id="telefon" placeholder="0441 123456">
+        </div>
+        <div>
+          <label>E-Mail</label>
+          <input type="email" id="email" placeholder="max@beispiel.de">
+        </div>
+      </div>
+      <div>
+        <label>Adresse</label>
+        <input type="text" id="adresse" placeholder="Musterstraße 1, 26122 Oldenburg">
+      </div>
+      <div class="row">
+        <div>
+          <label>Darlehenswunsch</label>
+          <input type="text" id="darlehen" placeholder="z.B. 300.000 €">
+        </div>
+        <div>
+          <label>Kaufpreis</label>
+          <input type="text" id="kaufpreis" placeholder="z.B. 380.000 €">
+        </div>
+      </div>
+      <div>
+        <label>Anlass / Interesse</label>
+        <select id="anlass">
+          <option value="">– bitte wählen –</option>
+          <option value="Erstfinanzierung">Erstfinanzierung</option>
+          <option value="Anschlussfinanzierung">Anschlussfinanzierung</option>
+          <option value="Modernisierung">Modernisierung</option>
+          <option value="Neubau">Neubau</option>
+          <option value="Kapitalanlage">Kapitalanlage</option>
+          <option value="Sonstiges">Sonstiges</option>
+        </select>
+      </div>
+      <div>
+        <label>Notiz / Zusatzinfo</label>
+        <textarea id="notiz" placeholder="Weitere Informationen zum Kontakt..."></textarea>
+      </div>
+      <div class="err" id="errMsg"></div>
+      <button class="btn" id="submitBtn" onclick="submitForm()">Kontakt weiterleiten →</button>
+      <div class="pflicht">* Pflichtfelder</div>
+    </div>
+  </div>
+
+  <div class="success" id="successMsg">
+    <div class="icon">✅</div>
+    <h2>Kontakt weitergeleitet!</h2>
+    <p>Der Kontakt wurde erfolgreich übermittelt und wird zeitnah kontaktiert.</p>
+    <button class="btn" style="margin-top:20px" onclick="resetForm()">Weiteren Kontakt eintragen</button>
+  </div>
+</div>
+
+<script>
+// Token aus URL lesen
+const urlParams = new URLSearchParams(window.location.search);
+const token = urlParams.get('token') || urlParams.get('t');
+
+// Backend URL – wird beim Deploy gesetzt
+const BACKEND = window.location.origin.includes('localhost')
+  ? 'http://localhost:3000'
+  : 'https://callsuite-backend.vercel.app'; // ← wird nach Deploy angepasst
+
+// Partner-Info laden
+async function loadPartnerInfo() {
+  if (!token) return;
+  try {
+    const resp = await fetch(`${BACKEND}/api/webhook?token=${token}`);
+    const data = await resp.json();
+    if (data.partner) {
+      const el = document.getElementById('partnerInfo');
+      el.style.display = 'block';
+      el.textContent = `📋 Kontakte für: ${data.partner} – ${data.liste || ''}`;
+    }
+  } catch(e) {}
+}
+
+async function submitForm() {
+  const vorname  = document.getElementById('vorname').value.trim();
+  const nachname = document.getElementById('nachname').value.trim();
+  const telefon  = document.getElementById('telefon').value.trim();
+  const email    = document.getElementById('email').value.trim();
+  const adresse  = document.getElementById('adresse').value.trim();
+  const darlehen = document.getElementById('darlehen').value.trim();
+  const kaufpreis= document.getElementById('kaufpreis').value.trim();
+  const anlass   = document.getElementById('anlass').value;
+  const notiz    = document.getElementById('notiz').value.trim();
+
+  const err = document.getElementById('errMsg');
+  err.style.display = 'none';
+
+  if (!vorname || !nachname) { showErr('Bitte Vor- und Nachname eingeben.'); return; }
+  if (!telefon) { showErr('Bitte Telefonnummer eingeben.'); return; }
+  if (!token) { showErr('Kein gültiger Weiterleitungs-Link. Bitte Link vom Partner anfordern.'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Wird übermittelt...';
+
+  try {
+    const resp = await fetch(`${BACKEND}/api/webhook?token=${token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        vorname, nachname,
+        telefon, email, adresse,
+        darlehen, kaufpreis, anlass,
+        nachricht: notiz
+      })
+    });
+
+    const data = await resp.json();
+
+    if (data.success) {
+      document.getElementById('formWrap').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'block';
+    } else {
+      showErr(data.error || 'Fehler beim Übermitteln. Bitte erneut versuchen.');
+      btn.disabled = false;
+      btn.textContent = 'Kontakt weiterleiten →';
+    }
+  } catch(e) {
+    showErr('Verbindungsfehler. Bitte erneut versuchen.');
+    btn.disabled = false;
+    btn.textContent = 'Kontakt weiterleiten →';
+  }
+}
+
+function showErr(msg) {
+  const el = document.getElementById('errMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function resetForm() {
+  ['vorname','nachname','telefon','email','adresse','darlehen','kaufpreis','notiz'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('anlass').value = '';
+  document.getElementById('formWrap').style.display = 'block';
+  document.getElementById('successMsg').style.display = 'none';
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('submitBtn').textContent = 'Kontakt weiterleiten →';
+}
+
+loadPartnerInfo();
+</script>
+</body>
+</html>
