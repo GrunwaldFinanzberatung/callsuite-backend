@@ -1,13 +1,13 @@
 {
   "name": "callsuite-backend",
   "version": "1.0.0",
-  "description": "CallSuite Pro Backend – Twilio, Webhooks, Sync",
+  "description": "CallSuite Pro Backend",
   "main": "index.js",
-  "scripts": {
-    "dev": "node api/dev-server.js"
-  },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
-    "twilio": "^5.0.0"
+    "twilio": "^4.23.0"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
