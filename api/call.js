@@ -1,11 +1,4 @@
-// api/call.js
-// Click-to-Call: Ruft erst den Agent an, dann verbindet mit Kunden
-
-const twilio = require('twilio');
-
-const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-const AUTH_TOKEN  = process.env.TWILIO_AUTH_TOKEN;
-const FROM_NUMBER = process.env.TWILIO_FROM_NUMBER;
+// api/call.js - Click-to-Call via Twilio REST API (kein SDK)
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -14,56 +7,60 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
 
-  const { to, agent_telefon, agent_id, kontakt_id, kontakt_name } = req.body;
+  const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+  const AUTH_TOKEN  = process.env.TWILIO_AUTH_TOKEN;
+  const FROM_NUMBER = process.env.TWILIO_FROM_NUMBER;
 
-  if (!to) return res.status(400).json({ error: 'Kundennummer fehlt' });
-  if (!agent_telefon) return res.status(400).json({ error: 'Agent-Nummer fehlt – bitte im Admin hinterlegen' });
+  console.log('SID:', ACCOUNT_SID ? ACCOUNT_SID.substring(0,8)+'...' : 'FEHLT');
+  console.log('TOKEN:', AUTH_TOKEN ? AUTH_TOKEN.substring(0,8)+'...' : 'FEHLT');
+  console.log('FROM:', FROM_NUMBER);
 
-  // Nummern bereinigen
+  const { to, agent_telefon, kontakt_name } = req.body;
+
   const cleanNr = (nr) => {
+    if (!nr) return null;
     let n = String(nr).replace(/[\s\-\(\)]/g, '');
     if (n.startsWith('0')) n = '+49' + n.substring(1);
     if (!n.startsWith('+')) n = '+49' + n;
     return n;
   };
 
-  const kundenNr = cleanNr(to);
   const agentNr  = cleanNr(agent_telefon);
+  const kundenNr = cleanNr(to);
+
+  console.log('Agent:', agentNr, 'Kunde:', kundenNr);
+
+  const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say language="de-DE">Verbindung wird hergestellt zu ${kontakt_name || 'Kontakt'}.</Say><Dial callerId="${FROM_NUMBER}" timeout="30"><Number>${kundenNr}</Number></Dial></Response>`;
+
+  const params = new URLSearchParams({
+    To: agentNr,
+    From: FROM_NUMBER,
+    Twiml: twiml
+  });
 
   try {
-    const client = twilio(ACCOUNT_SID, AUTH_TOKEN);
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${ACCOUNT_SID}/Calls.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + Buffer.from(`${ACCOUNT_SID}:${AUTH_TOKEN}`).toString('base64'),
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params.toString()
+      }
+    );
 
-    // Schritt 1: Agent anrufen
-    // Wenn Agent abhebt → TwiML verbindet ihn mit Kunden
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say language="de-DE" voice="Polly.Marlene">Verbindung wird hergestellt zu ${kontakt_name || 'Kontakt'}.</Say>
-  <Dial callerId="${FROM_NUMBER}" timeout="30" record="record-from-answer">
-    <Number>${kundenNr}</Number>
-  </Dial>
-</Response>`;
+    const data = await response.json();
+    console.log('Twilio:', response.status, JSON.stringify(data).substring(0,200));
 
-    const call = await client.calls.create({
-      to: agentNr,
-      from: FROM_NUMBER,
-      twiml,
-      statusCallback: `${process.env.VERCEL_URL ? 'https://'+process.env.VERCEL_URL : 'https://callsuite-backend.vercel.app'}/api/call-status`,
-      statusCallbackMethod: 'POST',
-      statusCallbackEvent: ['answered', 'completed']
-    });
-
-    console.log(`Click-to-Call: ${agentNr} → ${kundenNr} (${call.sid})`);
-
-    res.json({
-      success: true,
-      call_sid: call.sid,
-      agent: agentNr,
-      kunde: kundenNr,
-      status: call.status
-    });
-
+    if (response.ok) {
+      res.json({ success: true, call_sid: data.sid, status: data.status });
+    } else {
+      res.status(500).json({ error: data.message, code: data.code });
+    }
   } catch (err) {
-    console.error('Call Fehler:', err);
-    res.status(500).json({ error: err.message, code: err.code });
+    console.error('Fehler:', err.message);
+    res.status(500).json({ error: err.message });
   }
 };
